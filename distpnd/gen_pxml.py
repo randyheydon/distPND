@@ -31,11 +31,14 @@ class gen_pxml(Command):
 		'specify the package version (default is from setup function)'),
 		('osversion=', None,
 		'specify the required OS version, if any'),
+		('categories=', None,
+		'specify any comma-separated top-level categories to which this belongs'),
+		#('associations=', None,
+		#"I don't even think this is implemented in libpnd, so I won't have it here."),
 		('clockspeed=', None,
 		'specify the required system clock, in Hz, if needed'),
 		('mkdir=', None,
 		"specify comma-separated folders to create on the SD root, but don't use it, okay?"),
-		#categories, associations
 	]
 
 
@@ -95,9 +98,15 @@ class gen_pxml(Command):
 				self.warn('OS version number has too many dot-separated segments.  Only first four will be used.')
 			self.osversion.extend(('0','0','0','0')) #Ensure at least four subterms.
 		
-		#What do about categories?
+		if self.categories is not None:
+			self.categories = self.categories.split(',')
+			for i in self.categories:
+				if i not in ('AudioVideo', 'Audio', 'Video', 'Development', 'Education',
+					'Game', 'Graphics', 'Network', 'Office', 'Settings', 'System', 'Utility'):
+					self.warn('%s is not a valid top-level FreeDesktop category.  It will still be added to your PND, but you should only use categories found at http://standards.freedesktop.org/menu-spec/latest/apa.html' % i)
 		
-		#What do about associations?
+		#if self.associations is not None:
+			#Do something with associations.
 		
 		if self.clockspeed is not None and not self.clockspeed.isdigit():
 			self.warn('Your Pandora might not like a non-integer clockspeed.')
@@ -180,12 +189,15 @@ class gen_pxml(Command):
 			osversion.setAttribute('build', self.osversion[3])
 
 		if self.categories is not None:
-			#What do about categories??
-			pass
+			categories = doc.createElement('categories')
+			app.appendChild(categories)
+			for i in self.categories:
+				category = doc.createElement('category')
+				categories.appendChild(category)
+				category.setAttribute('name', i)
 
-		if self.associations is not None:
+		#if self.associations is not None:
 			#What do about associations??
-			pass
 
 		if self.clockspeed is not None:
 			clockspeed = doc.createElement('clockspeed')
