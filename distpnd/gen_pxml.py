@@ -1,4 +1,5 @@
 from distutils.core import Command
+from distutils.errors import DistutilsOptionError
 from xml.dom.minidom import Document
 
 
@@ -65,11 +66,18 @@ class gen_pxml(Command):
 
 	def finalize_options(self):
 		if self.id is None:
+			#Should ensure id and appdata have no invalid filename characters.
 			self.id = self.title.lower().replace(' ','-')
 		
 		if self.appdata is None:
 			self.appdata = self.id
 		
+		if self.title == 'UNKNOWN':
+			raise DistutilsOptionError('No name was found in the setup script and no title was specified.  You need one of these.')
+
+		if self.description == 'UNKNOWN':
+			self.warn('No description was found in the setup script or specified.  You should have one of these.')
+
 		#autogen exec lines or something?
 		
 		#check icon exists, else warn and change to none.
@@ -87,6 +95,8 @@ class gen_pxml(Command):
 			self.previewpics = self.previewpics.split(',')
 		
 		#Need to fail if version does not exist.
+		if self.version == '0.0.0': #This happens when version is not in setup script.
+			self.warn('No version number is specified.  All zeros will be inserted.')
 		self.version = self.version.split('.')
 		if len(self.version) > 4:
 			self.warn('Version number has too many dot-separated segments.  Only first four will be used.')
@@ -214,6 +224,7 @@ class gen_pxml(Command):
 
 
 		#Now that XML is all generated, write it to the specified file.
+		#Instead use self.make_file?
 		outfile = open(self.outfile, 'w')
 		try: outfile.write(doc.toprettyxml())
 		finally: outfile.close()
