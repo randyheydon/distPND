@@ -16,6 +16,20 @@ class gen_pxml(Command):
 		'specify a title (default is name from setup function)'),
 		('description=', None,
 		'specify a description for the program (default is from setup function)'),
+		('exec-command=', None,
+		'specify the command executed by the PND (default is first script listed in setup function; only one command is supported for now)'),
+		('exec-args=', None,
+		'specify any arguments to be passed to the command specified by "exec"'),
+		('exec-startdir=', None,
+		'specify the directory in which the command should be started (default is the root of the PND file)'),
+		#('exec-nostandalone', None,
+		#"activate this flag if the command should only be run with associations.  Since those aren't implemented yet, just don't use this flag"),
+		('exec-nobackground', None,
+		'activate this flag if users should not be able to switch applications while this is running'),
+		('exec-nox', None,
+		'activate this flag if the command should not be run in an X environment'),
+		('exec-xreq', None,
+		'activate this flag if the command requires an X environment to run'),
 		('icon=', None,
 		'specify an icon file to use'),
 		('info=', None,
@@ -49,7 +63,13 @@ class gen_pxml(Command):
 		self.appdata = None
 		self.title = self.distribution.get_name()
 		self.description = self.distribution.get_description()
-		#exec?
+		self.exec_command = None
+		self.exec_args = None
+		self.exec_startdir = None
+		self.exec_nostandalone = False
+		self.exec_nobackground = False
+		self.exec_nox = False
+		self.exec_xreq = False
 		self.icon = None
 		self.info = None
 		self.previewpics = None
@@ -79,8 +99,16 @@ class gen_pxml(Command):
 			self.warn('No description was found in the setup script or specified.  You should have one of these.')
 
 		#autogen exec lines or something?
+		if self.exec_command is None:
+			try: self.exec_command = self.distribution.scripts[0]
+			except TypeError:
+				raise DistutilsOptionError('Either your setup function should specify at least one script (in list format), or you should specify it as an option.  What is your PND going to run?')
+
+		if self.exec_nox and self.exec_xreq:
+			raise DistutilsOptionError('You can require X or you can require no X, but how am I supposed to satisfy both?  Please pick only one.')
 		
 		#check icon exists, else warn and change to none.
+		#also check icon is a valid format
 		
 		if self.info is not None:
 			#check info exists, else warn and change to none.
@@ -149,10 +177,23 @@ class gen_pxml(Command):
 
 		ex = doc.createElement('exec')
 		app.appendChild(ex)
-		ex.setAttribute('command', self.distribution.scripts[0])
-		#There are many other attributes to exec that are being ignored.
-		#Add user_options for them?  Or make them write their own PXML?
-		#Also, what to do about multiple scripts?
+		ex.setAttribute('command', self.exec_command)
+		if self.exec_args is not None:
+			ex.setAttribute('arguments', self.exec_args)
+		if self.exec_startdir is not None:
+			ex.setAttribute('startdir', self.exec_startdir)
+		if self.exec_nostandalone:
+			ex.setAttribute('standalone', 'false')
+		else:
+			ex.setAttribute('standalone', 'true')
+		if self.exec_nobackground:
+			ex.setAttribute('background', 'false')
+		else:
+			ex.setAttribute('background', 'true')
+		if self.exec_nox:
+			ex.setAttribute('x11', 'stop')
+		elif self.exec_xreq:
+			ex.setAttribute('x11', 'req')
 
 		if self.icon is not None:
 			icon = doc.createElement('icon')
