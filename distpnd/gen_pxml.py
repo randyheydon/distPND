@@ -95,6 +95,11 @@ class gen_pxml(Command):
 	
 
 	def finalize_options(self):
+		
+		#No inadvertent overwrites.
+		if os.path.exists(self.outfile) and not self.force:
+			raise DistutilsFileError('%s already exists.  Use --force to overwrite.'%self.outfile)
+
 		if self.id is None:
 			self.id = self.title.lower().replace(' ','-')
 		
@@ -290,8 +295,6 @@ class gen_pxml(Command):
 
 
 		#Now that XML is all generated, write it to the specified file.
-		if os.path.exists(self.outfile) and not self.force:
-			raise DistutilsFileError('%s already exists.  Use --force to overwrite.'%self.outfile)
 		outfile = open(self.outfile, 'w')
 		try: outfile.write(doc.toprettyxml())
 		finally: outfile.close()
