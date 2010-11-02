@@ -7,5 +7,5 @@ setup(
 	author = 'Randy Heydon',
 	author_email = 'randy.heydon@clockworklab.net',
 	packages = ['distpnd'],
-	license = 'PSF',
+	license = 'MIT',
 )
