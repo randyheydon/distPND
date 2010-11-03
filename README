@@ -1,1 +1,5 @@
-This project intends to create Distutils commands that can be used to create PND files for the Pandora handheld (see openpandora.org and pandorawiki.org/PND ).
+This project provides Distutils commands that can be used to create PND files for the Pandora handheld (see openpandora.org and pandorawiki.org/PND ).
+
+Two commands are provided: gen_pxml and bdist_pnd.  gen_pxml will generate a PXML file based on information contained in the setup script and provided as options.  bdist_pnd will assemble a PND file by taking advantage of the install command.  Therefore, any options given to install (or its subcommands) in the setup.cfg will be reflected in the PND.
+
+To use these commands, install this package as normal ("python setup.py install"); the two commands can then be accessed using the command-packages option (on other projects, either use "python setup.py --command-packages=distutils", or add "command-packages=distutils" to your setup.cfg, under the "global" heading).  From there, use the --help command to learn what these commands can do.
