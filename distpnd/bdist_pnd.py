@@ -54,7 +54,8 @@ class bdist_pnd(Command):
 		#As this creates a distribution, it should be in the dist folder
 		#and should make itself available to the upload command.
 		self.distribution.dist_files.append(('bdist_pnd', self.pndname))
-		os.mkdir('dist')
+		try: os.mkdir('dist')
+		except OSError: pass
 		self.pndname = os.path.join('dist', self.pndname)
 
 		#Arguments to calls taken from official pnd_make.sh.
