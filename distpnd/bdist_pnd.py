@@ -1,6 +1,6 @@
 from distutils.core import Command, run_setup
 from distutils.errors import DistutilsOptionError, DistutilsFileError
-import shutil, os.path
+import shutil, os
 import subprocess as sp
 from xml.dom.minidom import parse
 
@@ -50,6 +50,12 @@ class bdist_pnd(Command):
 				if self.pndname == '':
 					self.pndname = app.getAttribute('id')
 				self.pndname += '.pnd'
+		
+		#As this creates a distribution, it should be in the dist folder
+		#and should make itself available to the upload command.
+		self.distribution.dist_files.append(('bdist_pnd', self.pndname))
+		os.mkdir('dist')
+		self.pndname = os.path.join('dist', self.pndname)
 
 		#Arguments to calls taken from official pnd_make.sh.
 		self.squashfs_call = ('mksquashfs', self.build_dir, self.pndname, '-nopad', '-no-recovery', '-noappend')
@@ -65,7 +71,7 @@ class bdist_pnd(Command):
 		run_setup(self.distribution.script_name, ('install', '--root=%s'%self.build_dir,
 			'--install-lib=/', '--install-scripts=/', '--install-data=/'))
 
-		#Generate a PND in self.build_dir if needed.
+		#Generate a PXML in self.build_dir if needed.
 		pxml_final = os.path.join(self.build_dir, 'PXML.xml')
 		if self.pxml is None:
 			run_setup(self.distribution.script_name, ('gen_pxml', '--force',
