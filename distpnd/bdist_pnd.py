@@ -28,7 +28,7 @@ class bdist_pnd(Command):
 		self.format = 'auto'
 		self.pxml = None
 		self.pndname = None
-		self.build_dir = 'build_pnd' #This doesn't get used yet until I can figure out how to finagle the install command.
+		self.build_dir = 'build_pnd'
 		self.clean = False
 
 	
@@ -42,7 +42,7 @@ class bdist_pnd(Command):
 		#If an output filename is not specified, come up with one.
 		if self.pndname is None:
 			if self.pxml is None:
-				self.pndname = self.distribution.get_name().replace(' ','-') + '.pnd'
+				self.pndname = self.distribution.get_fullname() + '.pnd'
 			else:
 				#Parses PXML file, using appdata (or, if that doesn't exist, id).
 				app = parse(self.pxml).getElementsByTagName('application')[0]
@@ -66,11 +66,24 @@ class bdist_pnd(Command):
 			'--install-lib=/', '--install-scripts=/', '--install-data=/'))
 
 		#Generate a PND in self.build_dir if needed.
+		pxml_final = os.path.join(self.build_dir, 'PXML.xml')
 		if self.pxml is None:
-			run_setup(self.distribution.script_name, ('gen_pxml',
-				'--outfile=%s'%os.path.join(self.build_dir, 'PXML.xml')))
+			run_setup(self.distribution.script_name, ('gen_pxml', '--force',
+				'--outfile=%s'%pxml_final))
 		else:
-			shutil.copy(self.pxml, os.path.join(self.build_dir, 'PXML.xml'))
+			shutil.copy(self.pxml, pxml_final)
+
+		#If icon or info are in PXML, warn if they didn't make it into the PND.
+		try: icon = parse(pxml_final).getElementsByTagName('icon')[0].getAttribute('src')
+		except IndexError: icon = ''
+		if icon != '' and (not os.path.exists(os.path.join(self.build_dir, icon))):
+			self.warn('Specified icon file has not been found in your PND.  You have to make sure it gets installed somehow.  Your PND will have no icon.')
+			icon = ''
+
+		try: info = parse(pxml_final).getElementsByTagName('info')[0].getAttribute('src')
+		except IndexError: info = ''
+		if info != '' and (not os.path.exists(os.path.join(self.build_dir, info))):
+			self.warn('Specified info file has not been found in your PND.  You have to make sure it gets installed somehow.  Attempting to open your help file will fail.')
 		
 		#Make initial fs file.
 		if self.format == 'auto':
@@ -93,8 +106,13 @@ class bdist_pnd(Command):
 		
 		#Then append PXML and icon.
 		pnd = open(self.pndname, 'ab')
-		pxml = open(os.path.join(self.build_dir, 'PXML.xml'), 'rb')
+		pxml = open(pxml_final, 'rb')
 		try:
 			pnd.write(pxml.read())
-			#Scan pxml for icon, and append that too.
-		finally: pnd.close()
+			if icon != '':
+				icon = open(os.path.join(self.build_dir, icon), 'rb')
+				pnd.write(icon.read())
+				icon.close()
+		finally:
+			pnd.close()
+			pxml.close()

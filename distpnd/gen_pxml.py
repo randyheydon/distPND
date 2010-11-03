@@ -128,16 +128,18 @@ class gen_pxml(Command):
 
 		if self.icon is not None:
 			#Warns if icon doesn't exist.
-			if not os.path.exists(self.icon):
-				self.warn("Icon file %s doesn't seem to exist."%self.icon)
+			#Skip this warning, since it only means anything once packaged, not before.
+			#if not os.path.exists(self.icon):
+			#	self.warn("Icon file %s doesn't seem to exist."%self.icon)
 			#Warns if icon does not appear to be a PNG file (the only valid type?).
 			if guess_type(self.icon)[0] != 'image/png':
 				self.warn('Only icons in PNG format will work.  Specified icon does not appear to be a PNG.')
 		
 		if self.info is not None:
 			#Warns if info file doesn't exist.
-			if not os.path.exists(self.info):
-				self.warn("Info file %s doesn't seem to exist."%self.info)
+			#Skip this warning, since it only means anything once packaged, not before.
+			#if not os.path.exists(self.info):
+			#	self.warn("Info file %s doesn't seem to exist."%self.info)
 			#Checks that the info file is an appropriate type.
 			self.info_type = guess_type(self.info)[0]
 			if self.info_type not in ('text/plain', 'text/html'):
