@@ -1,6 +1,5 @@
-from distutils.core import Command
+from distutils.core import Command, run_setup
 from distutils.errors import DistutilsOptionError, DistutilsFileError
-from .gen_pxml import gen_pxml
 import shutil, os.path
 import subprocess as sp
 from xml.dom.minidom import parse
@@ -61,12 +60,15 @@ class bdist_pnd(Command):
 		if self.clean:
 			shutil.rmtree(self.build_dir)
 
-		self.run_command('install')
-		#specify root=build_dir, all install-*=/
+		#Runs "install" such that all files are put into self.build_dir.
+		#Specifying / for all the install-* might not work cross-platform.
+		run_setup(self.distribution.script_name, ('install', '--root=%s'%self.build_dir,
+			'--install-lib=/', '--install-scripts=/', '--install-data=/'))
 
+		#Generate a PND in self.build_dir if needed.
 		if self.pxml is None:
-			self.run_command('gen_pxml')
-			#specify to install to build_dir/PXML.xml, somehow
+			run_setup(self.distribution.script_name, ('gen_pxml',
+				'--outfile=%s'%os.path.join(self.build_dir, 'PXML.xml')))
 		else:
 			shutil.copy(self.pxml, os.path.join(self.build_dir, 'PXML.xml'))
 		
