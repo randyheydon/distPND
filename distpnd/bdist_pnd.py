@@ -3,6 +3,7 @@ from distutils.errors import DistutilsOptionError, DistutilsFileError
 from .gen_pxml import gen_pxml
 import shutil, os.path
 import subprocess as sp
+from xml.dom.minidom import parse
 
 class bdist_pnd(Command):
 
@@ -39,16 +40,21 @@ class bdist_pnd(Command):
 		if (self.pxml is not None) and (not os.path.exists(self.pxml)):
 			raise DistutilsFileError('PXML file %s does not exist'%self.pxml)
 
+		#If an output filename is not specified, come up with one.
 		if self.pndname is None:
 			if self.pxml is None:
 				self.pndname = self.distribution.get_name().replace(' ','-') + '.pnd'
-			else: pass
-				#read pxml file to get appdata/id
+			else:
+				#Parses PXML file, using appdata (or, if that doesn't exist, id).
+				app = parse(self.pxml).getElementsByTagName('application')[0]
+				self.pndname = app.getAttribute('appdata')
+				if self.pndname == '':
+					self.pndname = app.getAttribute('id')
+				self.pndname += '.pnd'
 
 		#Arguments to calls taken from official pnd_make.sh.
 		self.squashfs_call = ('mksquashfs', self.build_dir, self.pndname, '-nopad', '-no-recovery', '-noappend')
 		self.isofs_call = ('mkisofs', '-o%s'%self.pndname, self.build_dir)
-		print self.isofs_call
 	
 	
 	def run(self):
