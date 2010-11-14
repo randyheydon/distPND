@@ -298,5 +298,5 @@ class gen_pxml(Command):
 
         #Now that XML is all generated, write it to the specified file.
         outfile = open(self.outfile, 'w')
-        try: outfile.write(doc.toprettyxml())
+        try: outfile.write(doc.toprettyxml(encoding='UTF-8'))
         finally: outfile.close()
