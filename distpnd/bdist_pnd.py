@@ -83,6 +83,12 @@ class bdist_pnd(Command):
         if self.clean:
             shutil.rmtree(self.build_dir)
 
+        #Runs "build", ensuring that scripts are pointed to the right Python
+        #executable on the Pandora.  This is a workaround; Angstrom should
+        #really just have a "python2" symlink.
+        run_setup(self.distribution.script_name, ('build',
+            '--executable=/usr/bin/python', '--force'))
+
         #Runs "install" such that all files are put into self.build_dir.
         #Specifying / for all the install-* might not work cross-platform.
         run_setup(self.distribution.script_name, ('install', '--root=%s'%self.build_dir,
