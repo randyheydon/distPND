@@ -4,6 +4,43 @@ from xml.dom.minidom import Document
 from mimetypes import guess_type
 import os.path
 
+#List of all valid categories and subcategories.
+#Taken from http://standards.freedesktop.org/menu-spec/latest/apa.html
+#Will try to keep up-to-date, though I don't think the spec changes often.
+registered_categories = {
+    'AudioVideo':['Database','Midi','Mixer','Sequencer','Tuner','TV',
+        'AudioVideoEditing','Player','Recorder','DiscBurning','Music'],
+    'Audio':['HamRadio','Midi','Mixer','Sequencer','Tuner','AudioVideoEditing',
+        'Player','Recorder'],
+    'Video':['TV','AudioVideoEditing','Player','Recorder'],
+    'Development':['Building','Debugger','IDE','GUIDesigner','Profiling',
+        'RevisionControl','Translation','Database','ProjectManagement',
+        'WebDevelopment'],
+    'Education':['Art','Construction','Music','Languages','Science',
+        'ArtificialIntelligence','Astronomy','Biology','Chemistry',
+        'ComputerScience','DataVisualization','Economy','Electricity',
+        'Geography','Geology','Geoscience','History','ImageProcessing',
+        'Literature','Math','NumericalAnalysis','MedicalSoftware','Physics',
+        'Robotics','Sports','ParallelComputing'],
+    'Game':['ActionGame','AdventureGame','ArcadeGame','BoardGame','BlocksGame'
+        'CardGame','KidsGame','LogicGame','RolePlaying','Simulation',
+        'SportsGame','StrategyGame','Emulator'],
+    'Graphics':['2DGraphics','VectorGraphics','RasterGraphics','3DGraphics',
+        'Scanning','OCR','Photography','Publishing','Viewer'],
+    'Network':['Email','Dialup','InstantMessaging','Chat','IRCClient',
+        'FileTransfer','HamRadio','News','P2P','RemoteAccess','Telephony',
+        'VideoConference','WebBrowser','WebDevelopment'],
+    'Office':['Calendar','ContactManagement','Database','Dictionary','Chart',
+        'Email','Finance','FlowChart','PDA','ProjectManagement','Presentation',
+        'Spreadsheet','WordProcessor','Photography','Publishing','Viewer'],
+    'Settings':['DesktopSettings','HardwareSettings','Printing',
+        'PackageManager','Security','Accessibility'],
+    'System':['Emulator','FileTools','FileManager','TerminalEmulator',
+        'Filesystem','Monitor','Security'],
+    'Utility':['TextTools','TelephonyTools','Archiving','Compression',
+        'FileTools','Accessibility','Calculator','Clock','TextEditor'],
+}
+
 
 class gen_pxml(Command):
 
@@ -56,7 +93,7 @@ class gen_pxml(Command):
         ('osversion=', None,
         'specify the required OS version, if any'),
         ('categories=', None,
-        'specify any comma-separated top-level categories to which this belongs'),
+        'specify categories in the form "Category1:Subcat1,Subcat2;Category2:Subcat3"'),
         #('associations=', None,
         #"I don't even think this is implemented in libpnd, so I won't have it here."),
         ('clockspeed=', None,
@@ -168,11 +205,25 @@ class gen_pxml(Command):
             self.osversion.extend(('0','0','0','0')) #Ensures at least four subterms.
 
         if self.categories is not None:
-            self.categories = self.categories.split(',')
-            for i in self.categories:
-                if i not in ('AudioVideo', 'Audio', 'Video', 'Development', 'Education',
-                    'Game', 'Graphics', 'Network', 'Office', 'Settings', 'System', 'Utility'):
-                    self.warn('%s is not a valid top-level FreeDesktop category.  It will still be added to your PND, but you should only use categories found at http://standards.freedesktop.org/menu-spec/latest/apa.html' % i)
+            clist = self.categories.split(';')
+            self.categories = {}
+            for i in clist:
+                i = i.split(':')
+                if i[0] not in registered_categories:
+                    self.warn('%s is not a valid top-level FreeDesktop category.  It will still be added to your PND, but you should only use categories found at http://standards.freedesktop.org/menu-spec/latest/apa.html' % i[0])
+                self.categories[i[0]] = []
+                if len(i) == 2:
+                    subcats = i[1].split(',')
+                    if len(subcats) > 1:
+                        self.warn('Multiple subcategories under %s may not work properly, but I\'m not entirely sure.'%i[0])
+                    for j in subcats:
+                        if (i[0] in registered_categories) and (j not in registered_categories[i[0]]):
+                            self.warn('%s is not a valid subcategory of %s.  It will still be added to your PND, but you should only use subcategories found at http://standards.freedesktop.org/menu-spec/latest/apa.html' % (j,i[0]))
+                        self.categories[i[0]].append(j)
+                elif len(i) == 1:
+                    self.warn("It's a good idea to specify at least one subcategory under %s"%i[0])
+                else:
+                    raise DistutilsOptionError('The categories string is improperly formed.')
         else: self.warn('No categories specified.  You should really include at least one.')
 
         #if self.associations is not None:
@@ -278,6 +329,10 @@ class gen_pxml(Command):
                 category = doc.createElement('category')
                 categories.appendChild(category)
                 category.setAttribute('name', i)
+                for j in self.categories[i]:
+                    subcat = doc.createElement('subcategory')
+                    category.appendChild(subcat)
+                    subcat.setAttribute('name',j)
 
         #if self.associations is not None:
             #What do about associations??
