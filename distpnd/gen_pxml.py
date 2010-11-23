@@ -353,5 +353,8 @@ class gen_pxml(Command):
 
         #Now that XML is all generated, write it to the specified file.
         outfile = open(self.outfile, 'w')
-        try: outfile.write(doc.toprettyxml(encoding='UTF-8'))
+        #NOTE: If PXML is pretty printed and the PND does not include an icon,
+        #then the PND seems to end up unmountable. Therefore, no pretty print.
+        #try: outfile.write(doc.toprettyxml())
+        try: doc.writexml(outfile)
         finally: outfile.close()
