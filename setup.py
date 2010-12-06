@@ -2,8 +2,9 @@ from distutils.core import setup
 
 setup(
     name = 'distPND',
-    version = '0.0',
+    version = '0.1',
     description = "Extensions to Python's Distutils to build PND files",
+    long_description = open('README.rst'),
     author = 'Randy Heydon',
     author_email = 'randy.heydon@clockworklab.net',
     packages = ['distpnd'],
