@@ -5,6 +5,7 @@ setup(
     version = '0.1',
     description = "Extensions to Python's Distutils to build PND files",
     long_description = open('README.rst').read(),
+    url = 'http://randy.heydon.selfip.net/Programs/distPND',
     author = 'Randy Heydon',
     author_email = 'randy.heydon@clockworklab.net',
     packages = ['distpnd'],

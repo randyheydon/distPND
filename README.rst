@@ -33,7 +33,7 @@ Again, this is just part of the standard Python installation mechanism.  You can
 
 Specify command-packages
 ------------------------
-Your setup script must be made aware that these commands are available.  The easiest way to this is in the setup.cfg file: under the heading [global], include the line "command-packages=distpnd".  Alternatively, this can be specified on the command line as an option to the setup script in the form "python setup.py --command-packages distpnd *command*".
+Your setup script must be made aware that these commands are available.  The easiest way to do this is in the setup.cfg file: under the heading [global], include the line "command-packages=distpnd".  Alternatively, this can be specified on the command line as an option to the setup script in the form "python setup.py --command-packages distpnd *command*".
 
 Specify PND-specific options
 ----------------------------
