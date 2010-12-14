@@ -21,7 +21,9 @@ class bdist_pnd(Command):
         'specify a name for the resulting PND file (default determines from PXML appdata/id)'),
         ('build-dir=', None,
         'specify the directory in which to assemble the PND (default is build_pnd)'),
-        ('clean', None,
+        ('dist-dir=', 'd',
+        'specify the directory in which to place the resulting PND fild (default is "dist")'),
+        ('clean', 'c',
         'flag to automatically clean out the build-dir before installing'),
         #Could add pass-through options to gen_pxml.  For now, let them be done in setup.cfg.
         #Maybe some pass-through options to install?  Not yet.
@@ -35,6 +37,7 @@ class bdist_pnd(Command):
         self.info = None
         self.pndname = None
         self.build_dir = 'build_pnd'
+        self.dist_dir = 'dist'
         self.clean = False
 
 
@@ -70,9 +73,9 @@ class bdist_pnd(Command):
         #As this creates a distribution, it should be in the dist folder
         #and should make itself available to the upload command.
         self.distribution.dist_files.append(('bdist_pnd', self.pndname))
-        try: os.mkdir('dist')
+        try: os.mkdir(self.dist_dir)
         except OSError: pass
-        self.pndname = os.path.join('dist', self.pndname)
+        self.pndname = os.path.join(self.dist_dir, self.pndname)
 
         #Arguments to calls taken from official pnd_make.sh.
         self.squashfs_call = ('mksquashfs', self.build_dir, self.pndname, '-nopad', '-no-recovery', '-noappend')
