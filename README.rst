@@ -63,9 +63,6 @@ distPND is still early and not-very-well-tested software, so it's not perfect.  
 * No way to include external packages.
     The Pandora, by default, includes only a few non-standard Python libraries: Pygame, PyGTK, Numeric, Cairo, DBus, and Fuse.  If your project requires any other external libraries, they have to be distributed in your PND, but it's currently not possible to make bdist_pnd pull them in.  This is a feature of setuptools_, and I hope to make distPND take advantage of it soon.
 
-* Packages cannot import each other.
-    If your project contains multiple separate packages, they will currently not be able to import each other.  If installed normally, all packages would be on the path, and therefore accessible to each other.  Many projects contain only one top-level package, and for them this issue would not appear; however, once external package installation is added, this will be a real problem.  I hope to fix this soon-ish.
-
 * data_files behaves strangely; use package_data where possible.
     I don't fully understand the workings of the data_files option to the setup function; therefore, I don't know where in the PND those files will end up.  Files specified in package_data behave a lot more predictably, so I recommend you use those instead.
 
