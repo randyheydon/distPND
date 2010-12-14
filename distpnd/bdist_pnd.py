@@ -22,7 +22,7 @@ class bdist_pnd(Command):
         ('build-dir=', None,
         'specify the directory in which to assemble the PND (default is build_pnd)'),
         ('dist-dir=', 'd',
-        'specify the directory in which to place the resulting PND fild (default is "dist")'),
+        'specify the directory in which to place the resulting PND fild (default is dist)'),
         ('clean', 'c',
         'flag to automatically clean out the build-dir before installing'),
         #Could add pass-through options to gen_pxml.  For now, let them be done in setup.cfg.
@@ -71,8 +71,11 @@ class bdist_pnd(Command):
                 self.pndname += '.pnd'
 
         #As this creates a distribution, it should be in the dist folder
-        #and should make itself available to the upload command.
-        self.distribution.dist_files.append(('bdist_pnd', self.pndname))
+        #(unless otherwise specified) and should make itself available to the
+        #upload command.
+        if self.dist_dir == 'dist':
+            self.distribution.dist_files.append(('bdist_pnd', self.pndname))
+
         try: os.mkdir(self.dist_dir)
         except OSError: pass
         self.pndname = os.path.join(self.dist_dir, self.pndname)
