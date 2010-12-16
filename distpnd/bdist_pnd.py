@@ -102,7 +102,8 @@ class bdist_pnd(Command):
 
         #PXML options, needed if generating a PXML (a couple steps later).
         pxml_final = os.path.join(self.build_dir, 'PXML.xml')
-        gen_pxml_opts = ['gen_pxml', '--force', '--outfile=%s'%pxml_final]
+        gen_pxml_opts = ['--command-packages=distpnd', 'gen_pxml', '--force',
+            '--outfile=%s'%pxml_final]
 
         #Put icon and info files into the PND root.
         if self.icon is not None:
