@@ -21,7 +21,11 @@ Install this package through the standard Python installation mechanism.  Since 
 
 mksquashfs/mkisofs
 ------------------
-Without these commands, distPND can still make PND directories - folders filled with files that are read by the PND system.  However, the standard way to distribute a PND is as a single file; to do that, you'll need one or both of these installed.  Most distros have mksquashfs available in a package called "squashfs-tools" (make sure it's version 4.0 or later); this is the preferred package format.  If you would rather use an iso-format PND, mkisofs is available in "cdrkit" or "cdrtools".
+Without these commands, distPND can still make PND directories - folders filled with files that are read by the PND system.  However, the standard way to distribute a PND is as a single file; to do that, you'll need one or both of these installed.
+
+If you're on Linux, most distros have mksquashfs available in a package called "squashfs-tools" (make sure it's version 4.0 or later); this is the preferred package format.  If you would rather use an iso-format PND, mkisofs is available in "cdrkit" or "cdrtools".
+
+If you're on Windows, you can `download squashfs from here`_.  Make sure to get version 4.0 or later.  Also make sure to get the DLL files from the same link if you don't have Cygwin installed.
 
 
 Using in your project
@@ -71,6 +75,7 @@ distPND is still early and not-very-well-tested software, so it's not perfect.  
 .. _Pandora handheld: http://openpandora.org
 .. _Python package installation: http://docs.python.org/install
 .. _Python package distribution: http://docs.python.org/distutils
+.. _download squashfs from here: http://fragilematter.blogspot.com/2010/02/squashfs-tools-40-windows-binaries.html
 .. _setuptools: http://packages.python.org/distribute
 .. _standard category and subcategory: http://standards.freedesktop.org/menu-spec/latest/apa.html
 .. _The Lonely Tower: http://randy.heydon.selfip.net/Programs/The%20Lonely%20Tower/V2
