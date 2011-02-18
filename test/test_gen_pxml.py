@@ -41,6 +41,7 @@ class TestGeneral(BaseTester):
         self.setup_contents = self.setup_contents.format("""
             name = 'Super Dude',
             version = '0.1.butts',
+            author = 'ordinary dude',
             description = 'Real super.',
             scripts = ['runitall'],""")
         self.cfg_contents='[gen_pxml]\ncategories=Game'
@@ -53,6 +54,7 @@ class TestGeneral(BaseTester):
         self.setup_contents = self.setup_contents.format("""
             name = 'Super Dude',
             version = '0.1.butts',
+            author = 'ordinary dude',
             description = 'Real super.',
             scripts = ['runitall'],""")
         self.cfg_contents='[gen_pxml]\ncategories=Game'
@@ -73,10 +75,32 @@ class TestInsufficientInfo(BaseTester):
     def testNoName(self):
         self.setup_contents = self.setup_contents.format("""
             version = '0.1.butts',
+            author = 'ordinary dude',
             description = 'Real super.',
             scripts = ['runitall'],""")
         self._mksetup()
         self.assertRaises(DistutilsOptionError, self.setup_obj.run_command, 'gen_pxml')
+
+    def testNoAuthor(self):
+        self.setup_contents = self.setup_contents.format("""
+            name = 'Super Dude',
+            version = '0.1.butts',
+            description = 'Real super.',
+            scripts = ['runitall'],""")
+        self._mksetup()
+        self.assertRaises(DistutilsOptionError, self.setup_obj.run_command, 'gen_pxml')
+
+    def testBadVersion(self):
+        self.setup_contents = self.setup_contents.format("""
+            name = 'Super Dude',
+            version = '0.1.(butts',
+            description = 'Real super.',
+            scripts = ['runitall'],""")
+        self._mksetup()
+        self.assertRaises(DistutilsOptionError, self.setup_obj.run_command, 'gen_pxml')
+
+
+#TODO: Validate against XML schema file, if possible.
 
 
 

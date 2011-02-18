@@ -58,10 +58,6 @@ class gen_pxml(Command):
         'specify the unique id to use for this application (default is based on name from setup function)'),
         ('appdata=', None,
         'specify the name of the appdata directory (default is same as id)'),
-        ('title=', None,
-        'specify a title (default is name from setup function)'),
-        ('description=', None,
-        'specify a description for the program (default is from setup function)'),
         ('exec-command=', None,
         'specify the command executed by the PND (default is first script listed in setup function; only one command is supported for now)'),
         ('exec-args=', None,
@@ -76,12 +72,8 @@ class gen_pxml(Command):
         'activate this flag if the command should not be run in an X environment'),
         ('exec-xreq', None,
         'activate this flag if the command requires an X environment to run'),
-        ('icon=', None,
-        'specify an icon file to use'),
-        ('info=', None,
-        'specify a help file to use'),
-        ('previewpics=', None,
-        'specify any comma-separated preview pictures to use'),
+        ('title=', None,
+        'specify a title (default is name from setup function)'),
         ('author=', None,
         'specify the author (default is from setup function)'),
         ('author-email=', None,
@@ -92,14 +84,20 @@ class gen_pxml(Command):
         'specify the package version (default is from setup function)'),
         ('osversion=', None,
         'specify the required OS version, if any'),
+        ('description=', None,
+        'specify a description for the program (default is from setup function)'),
+        ('icon=', None,
+        'specify an icon file to use'),
+        ('previewpics=', None,
+        'specify any comma-separated preview pictures to use'),
+        ('info=', None,
+        'specify a help file to use'),
         ('categories=', None,
         'specify categories in the form "Category1:Subcat1,Subcat2;Category2:Subcat3"'),
         #('associations=', None,
         #"I don't even think this is implemented in libpnd, so I won't have it here."),
         ('clockspeed=', None,
-        'specify the required system clock, in MHz, if needed'),
-        ('mkdir=', None,
-        "specify comma-separated folders to create on the SD root, but don't use it, okay?"),
+        'specify the required system clock, in Hz, if needed'),
     ]
 
 
@@ -108,8 +106,6 @@ class gen_pxml(Command):
         self.force = False
         self.id = None
         self.appdata = None
-        self.title = self.distribution.get_name()
-        self.description = self.distribution.get_description()
         self.exec_command = None
         self.exec_args = None
         self.exec_startdir = None
@@ -117,18 +113,19 @@ class gen_pxml(Command):
         self.exec_nobackground = False
         self.exec_nox = False
         self.exec_xreq = False
-        self.icon = None
-        self.info = None
-        self.previewpics = None
+        self.title = self.distribution.get_name()
         self.author = self.distribution.get_author()
         self.author_email = self.distribution.get_author_email()
         self.author_website = self.distribution.get_url()
         self.version = self.distribution.get_version()
         self.osversion = None
+        self.description = self.distribution.get_description()
+        self.icon = None
+        self.previewpics = None
+        self.info = None
         self.categories = None
         self.associations = None
         self.clockspeed = None
-        self.mkdir = None
 
 
     def finalize_options(self):
@@ -149,12 +146,6 @@ class gen_pxml(Command):
             if i in self.id or i in self.appdata:
                 raise DistutilsOptionError("You can't use a %s in the id or appdata."%i)
 
-        if self.title == 'UNKNOWN':
-            raise DistutilsOptionError('No name was found in the setup script and no title was specified.  You need one of these.')
-
-        if self.description == 'UNKNOWN':
-            self.warn('No description was found in the setup script or specified.  You should have one of these.')
-
         if self.exec_command is None:
             try: self.exec_command = self.distribution.scripts[0]
             except TypeError:
@@ -162,6 +153,33 @@ class gen_pxml(Command):
 
         if self.exec_nox and self.exec_xreq:
             raise DistutilsOptionError('You can require X or you can require no X, but how am I supposed to satisfy both?  Please pick only one.')
+
+        if self.title == 'UNKNOWN':
+            raise DistutilsOptionError('No name was found in the setup script and no title was specified.  You need one of these.')
+
+        if self.author == 'UNKNOWN':
+            raise DistutilsOptionError('You have to have an author name.')
+
+        if self.version == '' or self.version == '0.0.0':
+            #Three zeros happens when version is not in setup script.
+            self.warn('No version number is specified.  0.0.0.0 will be used.')
+        self.version = self.version.split('.')
+        if len(self.version) > 4:
+            self.warn('Version number has too many dot-separated segments.  Only first four will be used.')
+        self.version.extend(('0','0','0','0')) #Ensures at least four subterms.
+        for i in self.version[:4]:
+            #Check each part of the version number is valid.
+            if not i.replace('+','').replace('-','').isalnum():
+                raise DistutilsOptionError('%s is not a valid version number component.  Must only contain, 0-9, a-b, A-B, +, -'%i)
+
+        if self.osversion is not None:
+            self.osversion = self.osversion.split('.')
+            if len(self.osversion) > 4:
+                self.warn('OS version number has too many dot-separated segments.  Only first four will be used.')
+            self.osversion.extend(('0','0','0','0')) #Ensures at least four subterms.
+
+        if self.description == 'UNKNOWN':
+            self.warn('No description was found in the setup script or specified.  You should have one of these.')
 
         if self.icon is not None:
             #Warns if icon doesn't exist.
@@ -171,6 +189,13 @@ class gen_pxml(Command):
             #Warns if icon does not appear to be a PNG file (the only valid type?).
             if guess_type(self.icon)[0] != 'image/png':
                 self.warn('Only icons in PNG format will work.  Specified icon does not appear to be a PNG.')
+
+        if self.previewpics is not None:
+            self.previewpics = self.previewpics.split(',')
+            #Warns if previewpics don't exist.
+            for i in self.previewpics:
+                if not os.path.exists(i):
+                    self.warn('Preview picture %s does not seem to exist.'%i)
 
         if self.info is not None:
             #Warns if info file doesn't exist.
@@ -182,27 +207,6 @@ class gen_pxml(Command):
             if self.info_type not in ('text/plain', 'text/html'):
                 self.warn("Don't recognize info file extension.  Will assume text/plain")
                 self.info_type = 'text/plain'
-
-        if self.previewpics is not None:
-            self.previewpics = self.previewpics.split(',')
-            #Warns if previewpics don't exist.
-            for i in self.previewpics:
-                if not os.path.exists(i):
-                    self.warn('Preview picture %s does not seem to exist.'%i)
-
-        if self.version == '' or self.version == '0.0.0':
-            #Three zeros happens when version is not in setup script.
-            self.warn('No version number is specified.  0.0.0.0 will be used.')
-        self.version = self.version.split('.')
-        if len(self.version) > 4:
-            self.warn('Version number has too many dot-separated segments.  Only first four will be used.')
-        self.version.extend(('0','0','0','0')) #Ensures at least four subterms.
-
-        if self.osversion is not None:
-            self.osversion = self.osversion.split('.')
-            if len(self.osversion) > 4:
-                self.warn('OS version number has too many dot-separated segments.  Only first four will be used.')
-            self.osversion.extend(('0','0','0','0')) #Ensures at least four subterms.
 
         if self.categories is not None:
             clist = self.categories.split(';')
@@ -232,10 +236,6 @@ class gen_pxml(Command):
         if self.clockspeed is not None and not self.clockspeed.isdigit():
             self.warn('Your Pandora might not like a non-integer clockspeed.')
 
-        if self.mkdir is not None:
-            self.warn("Don't use mkdir.  Please.")
-            self.mkdir = self.mkdir.split(',')
-
 
     def run(self):
         doc = Document()
@@ -247,16 +247,6 @@ class gen_pxml(Command):
         pxml.appendChild(app)
         app.setAttribute('id', self.id)
         app.setAttribute('appdata', self.appdata)
-
-        title = doc.createElement('title')
-        app.appendChild(title)
-        title.setAttribute('lang', 'en_US')
-        title.appendChild(doc.createTextNode(self.title))
-
-        description = doc.createElement('description')
-        app.appendChild(description)
-        description.setAttribute('lang', 'en_US')
-        description.appendChild(doc.createTextNode(self.description))
 
         ex = doc.createElement('exec')
         app.appendChild(ex)
@@ -278,30 +268,14 @@ class gen_pxml(Command):
         elif self.exec_xreq:
             ex.setAttribute('x11', 'req')
 
-        if self.icon is not None:
-            icon = doc.createElement('icon')
-            app.appendChild(icon)
-            icon.setAttribute('src', self.icon)
-
-        if self.info is not None:
-            info = doc.createElement('info')
-            app.appendChild(info)
-            info.setAttribute('name', '%s help'%self.title)
-            info.setAttribute('src', self.info)
-            info.setAttribute('type', self.info_type)
-
-        if self.previewpics is not None:
-            ppics = doc.createElement('previewpics')
-            app.appendChild(ppics)
-            for i in self.previewpics:
-                pic = doc.createElement('pic')
-                ppics.appendChild(pic)
-                pic.setAttribute('src', i)
+        title = doc.createElement('title')
+        app.appendChild(title)
+        title.setAttribute('lang', 'en_US')
+        title.appendChild(doc.createTextNode(self.title))
 
         author = doc.createElement('author')
         app.appendChild(author)
-        if self.author != 'UNKNOWN':
-            author.setAttribute('name', self.author)
+        author.setAttribute('name', self.author)
         if self.author_website != 'UNKNOWN':
             author.setAttribute('website', self.author_website)
         if self.author_email != 'UNKNOWN':
@@ -322,6 +296,31 @@ class gen_pxml(Command):
             osversion.setAttribute('release', self.osversion[2])
             osversion.setAttribute('build', self.osversion[3])
 
+        description = doc.createElement('description')
+        app.appendChild(description)
+        description.setAttribute('lang', 'en_US')
+        description.appendChild(doc.createTextNode(self.description))
+
+        if self.icon is not None:
+            icon = doc.createElement('icon')
+            app.appendChild(icon)
+            icon.setAttribute('src', self.icon)
+
+        if self.previewpics is not None:
+            ppics = doc.createElement('previewpics')
+            app.appendChild(ppics)
+            for i in self.previewpics:
+                pic = doc.createElement('pic')
+                ppics.appendChild(pic)
+                pic.setAttribute('src', i)
+
+        if self.info is not None:
+            info = doc.createElement('info')
+            app.appendChild(info)
+            info.setAttribute('name', '%s help'%self.title)
+            info.setAttribute('src', self.info)
+            info.setAttribute('type', self.info_type)
+
         if self.categories is not None:
             categories = doc.createElement('categories')
             app.appendChild(categories)
@@ -341,14 +340,6 @@ class gen_pxml(Command):
             clockspeed = doc.createElement('clockspeed')
             app.appendChild(clockspeed)
             clockspeed.setAttribute('frequency', self.clockspeed)
-
-        if self.mkdir is not None:
-            mkdir = doc.createElement('mkdir')
-            app.appendChild(mkdir)
-            for i in self.mkdir:
-                dirr = doc.createElement('dir')
-                mkdir.appendChild(dirr)
-                dirr.setAttribute('path', i)
 
 
         #Now that XML is all generated, write it to the specified file.
