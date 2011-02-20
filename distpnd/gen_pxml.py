@@ -97,7 +97,7 @@ class gen_pxml(Command):
         #('associations=', None,
         #"I don't even think this is implemented in libpnd, so I won't have it here."),
         ('clockspeed=', None,
-        'specify the required system clock, in Hz, if needed'),
+        'specify the required system clock, in MHz, if needed'),
     ]
 
 
