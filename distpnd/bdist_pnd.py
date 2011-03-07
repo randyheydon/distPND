@@ -1,6 +1,6 @@
-from distutils.core import Command, run_setup
+from distutils.core import Command
 from distutils.errors import DistutilsOptionError, DistutilsFileError
-import shutil, os
+import shutil, os, sys
 import subprocess as sp
 from xml.dom.minidom import parse
 
@@ -89,37 +89,49 @@ class bdist_pnd(Command):
         if self.clean:
             shutil.rmtree(self.build_dir)
 
-        #Runs "build", ensuring that scripts are pointed to the right Python
-        #executable on the Pandora.  This is a workaround; Angstrom should
-        #really just have a "python2" symlink.
-        run_setup(self.distribution.script_name, ('build',
-            '--executable=/usr/bin/python', '--force'))
+        # To run the commands that help form bdist_pnd, we have to mess around
+        # with the command line arguments.  So store them and reset later.
+        argv_old = sys.argv[:]
+        try:
+            scriptname = self.distribution.script_name
+            g = {'__file__':scriptname, '__name__':'__main__'}
 
-        #Runs "install" such that all files are put into self.build_dir.
-        #Specifying / for all the install-* might not work cross-platform.
-        run_setup(self.distribution.script_name, ('install', '--root=%s'%self.build_dir,
-            '--install-lib=/', '--install-scripts=/', '--install-data=/'))
+            #Runs "build", ensuring that scripts are pointed to the right Python
+            #executable on the Pandora.  This is a workaround; Angstrom should
+            #really just have a "python2" symlink.
+            sys.argv[1:] = ('build', '--executable=/usr/bin/python', '--force')
+            execfile(scriptname, g)
 
-        #PXML options, needed if generating a PXML (a couple steps later).
-        pxml_final = os.path.join(self.build_dir, 'PXML.xml')
-        gen_pxml_opts = ['--command-packages=distpnd', 'gen_pxml', '--force',
-            '--outfile=%s'%pxml_final]
+            #Runs "install" such that all files are put into self.build_dir.
+            #Specifying / for all the install-* might not work cross-platform.
+            sys.argv[1:] = ('install', '--root=%s'%self.build_dir,
+                '--install-lib=/', '--install-scripts=/', '--install-data=/')
+            execfile(scriptname, g)
 
-        #Put icon and info files into the PND root.
-        if self.icon is not None:
-            self.icon_name = os.path.basename(self.icon)
-            shutil.copy(self.icon, os.path.join(self.build_dir, self.icon_name))
-            gen_pxml_opts.append('--icon=%s'%self.icon_name)
-        if self.info is not None:
-            self.info_name = os.path.basename(self.info)
-            shutil.copy(self.info, os.path.join(self.build_dir, self.info_name))
-            gen_pxml_opts.append('--info=%s'%self.info_name)
+            #PXML options, needed if generating a PXML (a couple steps later).
+            pxml_final = os.path.join(self.build_dir, 'PXML.xml')
+            gen_pxml_opts = ['--command-packages=distpnd', 'gen_pxml',
+                '--force', '--outfile=%s'%pxml_final]
 
-        #Generate a PXML in self.build_dir if needed.
-        if self.pxml is None:
-            run_setup(self.distribution.script_name, gen_pxml_opts)
-        else:
-            shutil.copy(self.pxml, pxml_final)
+            #Put icon and info files into the PND root.
+            if self.icon is not None:
+                self.icon_name = os.path.basename(self.icon)
+                shutil.copy(self.icon, os.path.join(self.build_dir, self.icon_name))
+                gen_pxml_opts.append('--icon=%s'%self.icon_name)
+            if self.info is not None:
+                self.info_name = os.path.basename(self.info)
+                shutil.copy(self.info, os.path.join(self.build_dir, self.info_name))
+                gen_pxml_opts.append('--info=%s'%self.info_name)
+
+            #Generate a PXML in self.build_dir if needed.
+            if self.pxml is None:
+                sys.argv[1:] = gen_pxml_opts
+                execfile(scriptname, g)
+            else:
+                shutil.copy(self.pxml, pxml_final)
+
+        # Don't need to run any more other distutils commands, so reset argv.
+        finally: sys.argv = argv_old
 
         #If icon or info are in PXML, warn if they didn't make it into the PND.
         try: icon = parse(pxml_final).getElementsByTagName('icon')[0].getAttribute('src')
