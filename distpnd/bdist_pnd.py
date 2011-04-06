@@ -61,7 +61,9 @@ class bdist_pnd(Command):
         #If an output filename is not specified, come up with one.
         if self.pndname is None:
             if self.pxml is None:
-                self.pndname = self.distribution.get_fullname() + '.pnd'
+                # Apparently a PND with spaces in its filename will fail.  This
+                # might be a new or temporary thing, but let's fix it for now.
+                self.pndname = self.distribution.get_fullname().replace(' ','-') + '.pnd'
             else:
                 #Parses PXML file, using appdata (or, if that doesn't exist, id).
                 app = parse(self.pxml).getElementsByTagName('application')[0]
