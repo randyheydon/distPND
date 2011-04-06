@@ -5,6 +5,9 @@ import unittest, os
 from distutils.core import run_setup
 from distutils.errors import DistutilsOptionError, DistutilsFileError
 
+# Python lxml bindings needed for validation against schema.
+from lxml.etree import parse, XMLSchema
+
 
 class BaseTester(unittest.TestCase):
     "Provides functions useful to all test classes here."
@@ -43,11 +46,19 @@ class TestGeneral(BaseTester):
             version = '0.1.butts',
             author = 'ordinary dude',
             description = 'Real super.',
+            license = 'GPL',
+            download_url = 'http://example.butts',
             scripts = ['runitall'],""")
         self.cfg_contents='[gen_pxml]\ncategories=Game'
         self._mksetup()
         self.setup_obj.run_command('gen_pxml')
         self.to_clean.add('PXML.xml')
+        # Validate PXML.
+        # TODO: Validate against something using all available options.
+        with open('PXML.xml') as p, open('PXML_schema.xsd') as s:
+            xsd = XMLSchema(parse(s))
+            pxml = parse(p)
+            xsd.assertValid(pxml)
 
 
     def testOverwriting(self):
@@ -56,6 +67,7 @@ class TestGeneral(BaseTester):
             version = '0.1.butts',
             author = 'ordinary dude',
             description = 'Real super.',
+            license = 'GPL',
             scripts = ['runitall'],""")
         self.cfg_contents='[gen_pxml]\ncategories=Game'
 
@@ -77,6 +89,7 @@ class TestInsufficientInfo(BaseTester):
             version = '0.1.butts',
             author = 'ordinary dude',
             description = 'Real super.',
+            license = 'GPL',
             scripts = ['runitall'],""")
         self._mksetup()
         self.assertRaises(DistutilsOptionError, self.setup_obj.run_command, 'gen_pxml')
@@ -86,6 +99,7 @@ class TestInsufficientInfo(BaseTester):
             name = 'Super Dude',
             version = '0.1.butts',
             description = 'Real super.',
+            license = 'GPL',
             scripts = ['runitall'],""")
         self._mksetup()
         self.assertRaises(DistutilsOptionError, self.setup_obj.run_command, 'gen_pxml')
@@ -95,12 +109,19 @@ class TestInsufficientInfo(BaseTester):
             name = 'Super Dude',
             version = '0.1.(butts',
             description = 'Real super.',
+            license = 'GPL',
             scripts = ['runitall'],""")
         self._mksetup()
         self.assertRaises(DistutilsOptionError, self.setup_obj.run_command, 'gen_pxml')
 
-
-#TODO: Validate against XML schema file, if possible.
+    def testNoLicense(self):
+        self.setup_contents = self.setup_contents.format("""
+            name = 'Super Dude',
+            version = '0.1.butts',
+            description = 'Real super.',
+            scripts = ['runitall'],""")
+        self._mksetup()
+        self.assertRaises(DistutilsOptionError, self.setup_obj.run_command, 'gen_pxml')
 
 
 

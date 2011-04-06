@@ -72,8 +72,6 @@ class gen_pxml(Command):
         'activate this flag if the command should not be run in an X environment'),
         ('exec-xreq', None,
         'activate this flag if the command requires an X environment to run'),
-        ('title=', None,
-        'specify a title (default is name from setup function)'),
         ('author=', None,
         'specify the author (default is from setup function)'),
         ('author-email=', None,
@@ -84,10 +82,16 @@ class gen_pxml(Command):
         'specify the package version (default is from setup function)'),
         ('osversion=', None,
         'specify the required OS version, if any'),
+        ('title=', None,
+        'specify a title (default is name from setup function)'),
         ('description=', None,
         'specify a description for the program (default is from setup function)'),
         ('icon=', None,
         'specify an icon file to use'),
+        ('license=', None,
+        'specify the software license'),
+        ('source=', None,
+        'specify the URL to the source code'),
         ('previewpics=', None,
         'specify any comma-separated preview pictures to use'),
         ('info=', None,
@@ -121,6 +125,8 @@ class gen_pxml(Command):
         self.osversion = None
         self.description = self.distribution.get_description()
         self.icon = None
+        self.license = self.distribution.get_license()
+        self.source = self.distribution.get_download_url()
         self.previewpics = None
         self.info = None
         self.categories = None
@@ -190,6 +196,9 @@ class gen_pxml(Command):
             if guess_type(self.icon)[0] != 'image/png':
                 self.warn('Only icons in PNG format will work.  Specified icon does not appear to be a PNG.')
 
+        if self.license == 'UNKNOWN':
+            raise DistutilsOptionError('A software license must be specified (even "All rights reserved").')
+
         if self.previewpics is not None:
             self.previewpics = self.previewpics.split(',')
             #Warns if previewpics don't exist.
@@ -243,9 +252,52 @@ class gen_pxml(Command):
         doc.appendChild(pxml)
         pxml.setAttribute('xmlns','http://openpandora.org/namespaces/PXML')
 
+        # Create package element.
+        pkg = doc.createElement('package')
+        pxml.appendChild(pkg)
+        pkg.setAttribute('id', self.id)
+
+        author = doc.createElement('author')
+        pkg.appendChild(author)
+        author.setAttribute('name', self.author)
+        if self.author_website != 'UNKNOWN':
+            author.setAttribute('website', self.author_website)
+        if self.author_email != 'UNKNOWN':
+            author.setAttribute('email', self.author_email)
+
+        version = doc.createElement('version')
+        pkg.appendChild(version)
+        version.setAttribute('major', self.version[0])
+        version.setAttribute('minor', self.version[1])
+        version.setAttribute('release', self.version[2])
+        version.setAttribute('build', self.version[3])
+        # TODO: "type" field
+
+        titles = doc.createElement('titles')
+        pkg.appendChild(titles)
+        title = doc.createElement('title')
+        titles.appendChild(title)
+        title.setAttribute('lang', 'en_US')
+        title.appendChild(doc.createTextNode(self.title))
+
+        descriptions = doc.createElement('descriptions')
+        pkg.appendChild(descriptions)
+        description = doc.createElement('description')
+        descriptions.appendChild(description)
+        description.setAttribute('lang', 'en_US')
+        description.appendChild(doc.createTextNode(self.description))
+
+        if self.icon is not None:
+            icon = doc.createElement('icon')
+            pkg.appendChild(icon)
+            icon.setAttribute('src', self.icon)
+
+
+        # Create application element.
         app = doc.createElement('application')
         pxml.appendChild(app)
-        app.setAttribute('id', self.id)
+        # Adding version to id allows multiple versions to coexist on a Pandora.
+        app.setAttribute('id', self.id+'.'.join(self.version))
         app.setAttribute('appdata', self.appdata)
 
         ex = doc.createElement('exec')
@@ -268,11 +320,6 @@ class gen_pxml(Command):
         elif self.exec_xreq:
             ex.setAttribute('x11', 'req')
 
-        title = doc.createElement('title')
-        app.appendChild(title)
-        title.setAttribute('lang', 'en_US')
-        title.appendChild(doc.createTextNode(self.title))
-
         author = doc.createElement('author')
         app.appendChild(author)
         author.setAttribute('name', self.author)
@@ -287,6 +334,7 @@ class gen_pxml(Command):
         version.setAttribute('minor', self.version[1])
         version.setAttribute('release', self.version[2])
         version.setAttribute('build', self.version[3])
+        # TODO: "type" field
 
         if self.osversion is not None:
             osversion = doc.createElement('osversion')
@@ -296,6 +344,25 @@ class gen_pxml(Command):
             osversion.setAttribute('release', self.osversion[2])
             osversion.setAttribute('build', self.osversion[3])
 
+        titles = doc.createElement('titles')
+        app.appendChild(titles)
+        title = doc.createElement('title')
+        titles.appendChild(title)
+        title.setAttribute('lang', 'en_US')
+        title.appendChild(doc.createTextNode(self.title))
+        # For backwards compatibility:
+        title = doc.createElement('title')
+        app.appendChild(title)
+        title.setAttribute('lang', 'en_US')
+        title.appendChild(doc.createTextNode(self.title))
+
+        descriptions = doc.createElement('descriptions')
+        app.appendChild(descriptions)
+        description = doc.createElement('description')
+        descriptions.appendChild(description)
+        description.setAttribute('lang', 'en_US')
+        description.appendChild(doc.createTextNode(self.description))
+        # For backwards compatibility:
         description = doc.createElement('description')
         app.appendChild(description)
         description.setAttribute('lang', 'en_US')
@@ -305,6 +372,14 @@ class gen_pxml(Command):
             icon = doc.createElement('icon')
             app.appendChild(icon)
             icon.setAttribute('src', self.icon)
+
+        licenses = doc.createElement('licenses')
+        app.appendChild(licenses)
+        license = doc.createElement('license')
+        licenses.appendChild(license)
+        license.setAttribute('name', self.license)
+        if self.source != 'UNKNOWN':
+            license.setAttribute('sourcecodeurl', self.source)
 
         if self.previewpics is not None:
             ppics = doc.createElement('previewpics')
