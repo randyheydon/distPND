@@ -80,6 +80,8 @@ class gen_pxml(Command):
         "specify the author's website (default is url from setup function)"),
         ('version=', None,
         'specify the package version (default is from setup function)'),
+        ('version-type=', None,
+        'specify the release type: "alpha", "beta", or "release" (default is "release")'),
         ('osversion=', None,
         'specify the required OS version, if any'),
         ('title=', None,
@@ -122,6 +124,7 @@ class gen_pxml(Command):
         self.author_email = self.distribution.get_author_email()
         self.author_website = self.distribution.get_url()
         self.version = self.distribution.get_version()
+        self.version_type = 'release'
         self.osversion = None
         self.description = self.distribution.get_description()
         self.icon = None
@@ -177,6 +180,10 @@ class gen_pxml(Command):
             #Check each part of the version number is valid.
             if not i.replace('+','').replace('-','').isalnum():
                 raise DistutilsOptionError('%s is not a valid version number component.  Must only contain, 0-9, a-b, A-B, +, -'%i)
+
+        if self.version_type not in ('alpha', 'beta', 'release'):
+            self.warn('version-type may only be "alpha", "beta", or "release".  Changing to "release".')
+            self.version_type = 'release'
 
         if self.osversion is not None:
             self.osversion = self.osversion.split('.')
@@ -271,7 +278,7 @@ class gen_pxml(Command):
         version.setAttribute('minor', self.version[1])
         version.setAttribute('release', self.version[2])
         version.setAttribute('build', self.version[3])
-        # TODO: "type" field
+        version.setAttribute('type', self.version_type)
 
         titles = doc.createElement('titles')
         pkg.appendChild(titles)

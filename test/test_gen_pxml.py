@@ -49,7 +49,7 @@ class TestGeneral(BaseTester):
             license = 'GPL',
             download_url = 'http://example.butts',
             scripts = ['runitall'],""")
-        self.cfg_contents='[gen_pxml]\ncategories=Game'
+        self.cfg_contents='[gen_pxml]\ncategories=Game\nversion-type=beta'
         self._mksetup()
         self.setup_obj.run_command('gen_pxml')
         self.to_clean.add('PXML.xml')
