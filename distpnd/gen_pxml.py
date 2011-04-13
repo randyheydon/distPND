@@ -209,9 +209,10 @@ class gen_pxml(Command):
         if self.previewpics is not None:
             self.previewpics = self.previewpics.split(',')
             #Warns if previewpics don't exist.
-            for i in self.previewpics:
-                if not os.path.exists(i):
-                    self.warn('Preview picture %s does not seem to exist.'%i)
+            #Skip this warning, since it only means anything once packaged, not before.
+            #for i in self.previewpics:
+            #    if not os.path.exists(i):
+            #        self.warn('Preview picture %s does not seem to exist.'%i)
 
         if self.info is not None:
             #Warns if info file doesn't exist.
